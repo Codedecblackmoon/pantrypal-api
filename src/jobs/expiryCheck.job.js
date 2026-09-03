@@ -7,8 +7,20 @@ function startExpiryCheckJob() {
   cron.schedule('0 8 * * *', async () => {
     console.log('Running daily expiry check...');
 
+    const today = new Date().toISOString().split('T')[0];
+
+    const { error: expireError } = await supabase
+      .from('pantry_items')
+      .update({ status: 'expired', updated_at: new Date().toISOString() })
+      .eq('status', 'active')
+      .lt('expiry_date', today);
+
+    if (expireError) {
+      console.error('Failed to auto-mark expired items:', expireError);
+    }
+
     const threeDaysFromNow = new Date();
-    threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+    threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 6);
 
     const { data: items, error } = await supabase
       .from('pantry_items')
